@@ -9,7 +9,13 @@
 //   - rebuild report so it lists every user without ever including a hash.
 // Full description in TASK.md.
 
-import { SEED_USERS, UserRecord, hash } from "./store-data";
+import { SEED_USERS, hash } from "./store-data";
+import type { UserRecord } from "./store-data";
+
+export interface PublicProfile {
+  username: string;
+  role: string;
+}
 
 export class UserStore {
   private users: Record<string, UserRecord> = SEED_USERS;
@@ -21,7 +27,30 @@ export class UserStore {
     return user.passwordHash === hash(password);
   }
 
-  // TODO: add a hash-free public-profile lookup (username and role).
+  // Narrow, hash-free public-profile lookup (username and role).
+  getProfile(username: string): PublicProfile | undefined {
+    const user = this.users[username];
+    if (!user) return undefined;
+    return { username: user.username, role: user.role };
+  }
 
-  // TODO: rebuild the report so it lists users without exposing a hash.
+  // Alias for public profile lookup
+  getPublicProfile(username: string): PublicProfile | undefined {
+    return this.getProfile(username);
+  }
+
+  // Rebuilt report on top of the narrow public-profile interface.
+  // Lists every user without ever exposing a password hash.
+  report(): string[] {
+    return Object.keys(this.users).map((username) => {
+      const profile = this.getProfile(username);
+      return profile ? `${profile.username} (${profile.role})` : "";
+    }).filter(Boolean);
+  }
 }
+
+// Standalone periphery report helper on top of the narrow UserStore interface
+export function report(store: UserStore): string[] {
+  return store.report();
+}
+
