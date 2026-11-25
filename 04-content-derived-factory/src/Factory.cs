@@ -3,24 +3,36 @@
 // Run with: dotnet run
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 public record Item(Dictionary<string, string> Content, string Id);
 
 public static class Factory
 {
-    // TODO: return an Item holding the content and an id derived from its content (use Derive).
+    // Return an Item holding the content and an id derived from its content (use Derive).
     public static Item Create(Dictionary<string, string> content)
     {
-        throw new NotImplementedException();
+        return new Item(new Dictionary<string, string>(content), Derive(content));
     }
 
-    // TODO: recompute the id from the content alone, with no registry and no shared state,
+    // Recompute the id from the content alone, with no registry and no shared state,
     // so the demo passes.
     public static string Derive(Dictionary<string, string> content)
     {
-        throw new NotImplementedException();
+        var sortedKeys = content.Keys.OrderBy(k => k, StringComparer.Ordinal);
+        var sb = new StringBuilder();
+        foreach (var key in sortedKeys)
+        {
+            sb.Append(key).Append(':').Append(content[key]).Append('\n');
+        }
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
+
 
     public static void Main()
     {

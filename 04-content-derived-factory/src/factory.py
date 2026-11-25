@@ -4,20 +4,25 @@
 
 
 
+import hashlib
+import json
+
+
 def create(content):
     """content is a dict of string fields, e.g. {"title": ..., "body": ..., "author": ...}.
     Return {"content": content, "id": <id>}, where id is derived from the content alone.
     """
-    # TODO: return an item holding the content and an id derived from its content (use derive).
-    raise NotImplementedError
+    return {"content": dict(content), "id": derive(content)}
 
 
 def derive(content):
     """Recompute the id from the content alone, with no registry and no shared state,
     so the demo passes.
     """
-    # TODO
-    raise NotImplementedError
+    sorted_items = sorted(content.items())
+    canonical = json.dumps(sorted_items, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
 
 
 def demo():

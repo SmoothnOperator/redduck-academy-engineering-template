@@ -1,23 +1,42 @@
 // 04-content-derived-factory/src/Factory.java
 // A content-derived factory. Fill in create() and derive(). Plain Java, no framework.
 // Compile and run: javac src/Factory.java && java -cp src Factory
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Factory {
     // An item: the content it was built from, and an id derived from that content.
     record Item(Map<String, String> content, String id) {}
 
-    // TODO: return an Item holding the content and an id derived from its content (use derive).
+    // Return an Item holding the content and an id derived from its content (use derive).
     static Item create(Map<String, String> content) {
-        throw new UnsupportedOperationException("not implemented");
+        return new Item(new LinkedHashMap<>(content), derive(content));
     }
 
-    // TODO: recompute the id from the content alone, with no registry and no shared state,
+    // Recompute the id from the content alone, with no registry and no shared state,
     // so the demo passes.
     static String derive(Map<String, String> content) {
-        throw new UnsupportedOperationException("not implemented");
+        try {
+            List<String> sortedKeys = new ArrayList<>(content.keySet());
+            Collections.sort(sortedKeys);
+            StringBuilder sb = new StringBuilder();
+            for (String key : sortedKeys) {
+                sb.append(key).append(":").append(content.get(key)).append("\n");
+            }
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(sb.toString().getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
+
 
     public static void main(String[] args) throws Exception {
         Map<String, String> content = new LinkedHashMap<>();
