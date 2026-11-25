@@ -6,17 +6,24 @@ language: "typescript"
 
 ## The attack
 
-A rational adversary uses the public `transfer(from, to, amount)` method to directly drain a victim's account without requiring credentials or authorization.
+A rational adversary exercises a non-positive transfer amount through the public `transfer(from, to, amount)` method to extract value and drain a victim's account.
 
 ### Concrete steps:
 1. **Starting balances:** `attacker: 0`, `victim: 100`.
 2. **The exact call made:**
    ```ts
-   ledger.transfer("victim", "attacker", 100);
+   ledger.transfer("attacker", "victim", -100);
    ```
-   *(Alternatively, if an attacker were somehow restricted to specifying their own account as `from`, they can pass a negative amount: `ledger.transfer("attacker", "victim", -100)`. Because `0 < -100` evaluates to false, the balance check is bypassed, and `0 - (-100)` credits the attacker 100 while `100 + (-100)` drains the victim to 0).*
-3. **Execution inside the service:** The method checks `available = balanceOf("victim")` (100). The check `if (available < amount)` (`100 < 100`) passes. The ledger decrements `victim` by 100 and increments `attacker` by 100.
+3. **Execution inside the service:**
+   - The ledger computes available balance for `"attacker"`: `available = balanceOf("attacker") = 0`.
+   - It checks whether balance is sufficient: `if (available < amount)`. Because `0 < -100` evaluates to **false**, the check passes and no error is thrown.
+   - The ledger updates balances using arithmetic on the negative amount:
+     - `balances.set("attacker", available - amount)` => `0 - (-100) = +100` (credits the attacker).
+     - `balances.set("victim", balanceOf("victim") + amount)` => `100 + (-100) = 0` (drains the victim).
 4. **Ending balances:** `attacker: 100`, `victim: 0`. The victim is fully drained, and the attacker holds 100 points they were never granted.
+
+*(In addition, because the API also exposes `from`, an adversary could alternatively call `ledger.transfer("victim", "attacker", 100)` to debit the victim directly without authorization).*
+
 
 ## Why it works at the design level
 
